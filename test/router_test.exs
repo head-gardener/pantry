@@ -1,6 +1,6 @@
-defmodule RouterTest do
+defmodule Pantry.RouterTest do
   use ExUnit.Case
-  alias Router, as: Subject
+  alias Pantry.Router, as: Subject
   doctest Subject
 
   setup_all do

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) try {
 
       s.add_torrent(p);
 
-      io::log(io::INFO, "new torrent");
+      io::log(io::INFO, "added " + std::to_string(id++));
     /* } else if (code == "sts" ) { */
     /*   io::log(io::INFO) */
     } else if (code == "ext" ) {
