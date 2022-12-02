@@ -37,8 +37,8 @@ std::ostream &write_packet_length(std::ostream &s, uint32_t len) {
  * prints to the standart output withouth buffering.
  */
 void io::log(const io::priority p, const std::string &msg) {
-  /* std::string res = "(" + std::to_string(p) + ") " + msg; */
   write_packet_length(std::cout, 4 + msg.length());
+  /* fprintf(stderr, "\n(%i) %s\n", p, msg.c_str()); */
   printf("(%i) %s", p, msg.c_str());
   std::cout.flush();
 }
