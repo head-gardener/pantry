@@ -3,17 +3,16 @@
 #include "libtorrent/session.hpp"
 #include "libtorrent/torrent_info.hpp"
 
-#include "../include/json.hpp"
+#include "json/json.h"
 
 #include "io.hpp"
 #include "socket.hpp"
 #include <cstdio>
 #include <iostream>
 #include <libtorrent/error_code.hpp>
+#include <sstream>
 #include <string>
 #include <unistd.h>
-
-using json = nlohmann::json;
 
 unsigned int id = 0;
 
@@ -29,13 +28,17 @@ int main(int argc, char *argv[]) try {
     auto cmd = io::get();
     auto code = cmd.substr(0, 3);
     cmd = cmd.substr(4, cmd.length() - 1);
-    if (code == "add") {
-      auto params = json::parse(cmd);
 
+    // parse params
+    Json::Value params;
+    std::stringstream str(cmd);
+    str >> params;
+
+    if (code == "add") {
       lt::add_torrent_params p;
-      p.save_path = params["save_path"].get<std::string>();
-      p.ti = std::make_shared<lt::torrent_info>(
-          params.at("torrent_info").get<std::string>());
+      p.save_path = params["save_path"].asString();
+      p.ti =
+          std::make_shared<lt::torrent_info>(params["torrent_info"].asString());
 
       auto handle = s.add_torrent(p);
 
