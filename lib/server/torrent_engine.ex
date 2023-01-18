@@ -23,7 +23,7 @@ defmodule Pantry.Server.TorrentEngine do
     # so ugh it's critical to validate that this callback is
     # called exactly the way I assume it is - in order to avoid
     # considerable resource leakage
-    Logger.debug("#{inspect(self())} terminating")
+    Logger.debug("Port #{inspect(self())} terminating")
 
     if nil != Port.info(port) do
       true = Port.close(port)
@@ -40,7 +40,7 @@ defmodule Pantry.Server.TorrentEngine do
     port = Port.open({:spawn, "native/torrent_engine/bin/torrent_engine"}, opts)
     state = Pantry.Server.State.pure()
 
-    Logger.debug("#{inspect(self())} inits")
+    Logger.debug("Port #{inspect(self())} inits")
     {:ok, {port, parent, state}}
   end
 
@@ -71,7 +71,7 @@ defmodule Pantry.Server.TorrentEngine do
 
   @impl true
   def handle_info({_port, {:data, "(2) added " <> id}}, {port, parent, state}) do
-    Logger.debug("#{inspect(self())} added")
+    # Logger.debug("#{inspect(self())} added")
 
     msg = {:added_torrent, id}
     {:ok, state} = Pantry.Server.State.parse(state, msg)

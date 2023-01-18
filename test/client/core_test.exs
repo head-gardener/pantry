@@ -17,9 +17,17 @@ defmodule Pantry.Client.CoreTest do
     {:ok, server: server}
   end
 
-  test "registers new processes correctly", context do
-    msg = {:added_torrent, 0}
-    {:ok, state} = Pantry.Server.State.pure() |> Pantry.Server.State.parse(msg)
+  test "registers new servers correctly", context do
+    msg = {:added_torrent, "0"}
+    {:ok, state} = Pantry.Server.State.pure(context.server) |> Pantry.Server.State.parse(msg)
+
+    # wait for server to intialize and register
+    :ok =
+      receive do
+        x -> x
+      after
+        100 -> :ok
+      end
 
     socket = Subject.child(context.client, Socket)
     GenServer.cast(socket, {:info, context.server, msg})
@@ -31,12 +39,12 @@ defmodule Pantry.Client.CoreTest do
         100 -> :ok
       end
 
-    agent = Subject.child(context.client, StateAgent)
-    assert ^state = Pantry.Client.StateAgent.get(agent)
+    assert ^state = Pantry.Client.Socket.get_state(socket)
   end
 
-  test "event broadcasts work", context do
+  test "server side event broadcasts work", context do
     socket = Pantry.Server.Core.child(context.server, Socket)
+    server = context.server
     Pantry.Server.Socket.request_torrent_add(socket, %{file: "examples/nmap.torrent"})
 
     :ok =
@@ -46,8 +54,8 @@ defmodule Pantry.Client.CoreTest do
         100 -> :ok
       end
 
-    agent = Subject.child(context.client, StateAgent)
-    %{torrents: ts} = Pantry.Client.StateAgent.get(agent)
+    socket = Subject.child(context.client, Socket)
+    %{torrents: ts, servers: [^server]} = Pantry.Client.Socket.get_state(socket)
     assert Enum.count(ts) == 1
   end
 end

@@ -12,7 +12,7 @@ defmodule Pantry.Server.CoreTest do
 
   test "state", context do
     socket = Subject.child(context.server, Socket)
-    pure = Pantry.Server.State.pure()
+    pure = Pantry.Server.State.pure(context.server)
     ^pure = Pantry.Server.Socket.request_state(socket)
   end
 end

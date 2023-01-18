@@ -29,7 +29,9 @@ defmodule Pantry.Server.Core do
     {:ok, sup} = Supervisor.start_link([manager_spec, socket_spec], strategy: :one_for_one)
 
     {_, socket, _, _} = Supervisor.which_children(sup) |> List.keyfind(Socket, 0)
-    Pantry.Server.Socket.broadcast(socket, {:exist})
+    # inform all listening client sockets of a new server,
+    # which triggers discovery sequence
+    Pantry.Server.Socket.broadcast(socket, {:server_spawned})
 
     {:ok, {sup}}
   end

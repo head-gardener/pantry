@@ -1,19 +1,18 @@
 SOURCES = $(wildcard src/*.cpp)
 OBJECTS = $(patsubst src/%.cpp, bin/%.o, $(SOURCES))
 IMPORTS = -ltorrent-rasterbar -ljsoncpp
-FLAGS = -Wall
+CPPFLAGS ?= -Werror -O3
 
-build: $(OBJECTS) bin
-	g++ $(IMPORTS) $(FLAGS) $(OBJECTS) -o bin/torrent_engine
+.PHONY: clean build
 
-bin/main.o: src/main.cpp bin
-	g++ -O3 -c $< -o $@
+build: $(OBJECTS)
+	g++ $(IMPORTS) $(CPPFLAGS) $(OBJECTS) -o bin/torrent_engine
 
-bin/%.o: src/%.cpp src/%.hpp bin
-	g++ -O3 -c $< -o $@
+bin/main.o: src/main.cpp
+	g++ $(CPPFLAGS) -c $< -o $@
 
-bin:
-	mkdir bin
+bin/%.o: src/%.cpp src/%.hpp
+	g++ $(CPPFLAGS) -c $< -o $@
 
 clean:
 	rm -rf bin/*

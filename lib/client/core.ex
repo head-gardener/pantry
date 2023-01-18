@@ -16,15 +16,6 @@ defmodule Pantry.Client.Core do
 
   @impl true
   def init(handle) do
-    # Agent fails should cause socket fails, and vice aversa 
-    # Reason for this is that server state is computable, and should
-    # be discarded and recalculated as soon as errors arise
-    # This should be organised either through restructuring supervisors
-    # or moving state to socket
-    agent_spec = %{
-      id: StateAgent,
-      start: {Pantry.Client.StateAgent, :start_link, []}
-    }
     socket_spec = %{
       id: Socket,
       start: {Pantry.Client.Socket, :start_link, [self(), handle]}
@@ -34,7 +25,7 @@ defmodule Pantry.Client.Core do
       start: {Pantry.Client.UI.Console, :start_link, [self()]}
     }
 
-    {:ok, sup} = Supervisor.start_link([agent_spec, socket_spec, ui_spec], strategy: :one_for_one)
+    {:ok, sup} = Supervisor.start_link([socket_spec, ui_spec], strategy: :one_for_one)
     {:ok, {sup}}
   end
 

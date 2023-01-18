@@ -1,3 +1,2 @@
 -std=c++17
 -ltorrent-rasterbar
--I:/usr/lib/erlang/erts-13.0.4/include/

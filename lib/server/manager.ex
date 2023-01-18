@@ -23,7 +23,7 @@ defmodule Pantry.Server.Manager do
 
   @impl true
   def terminate(reason, _) do
-    Logger.info("Manager exited with reason: #{inspect(reason)}")
+    Logger.debug("Manager exited with reason: #{inspect(reason)}")
 
     reason
   end
@@ -31,6 +31,7 @@ defmodule Pantry.Server.Manager do
   @impl true
   def init(parent) do
     Process.flag(:trap_exit, true)
+    Logger.debug("Manager #{inspect(self())} initialized")
 
     child = %{
       id: Subject,
@@ -43,14 +44,14 @@ defmodule Pantry.Server.Manager do
 
   @impl true
   def handle_info({:port_started}, {parent, sup}) do
-    Logger.info("Port initialized")
+    Logger.debug("Port #{inspect(self())} initialized")
 
     {:noreply, {parent, sup}}
   end
 
   @impl true
   def handle_info({:added_torrent, id}, {parent, sup}) do
-    Logger.info("Added #{id}")
+    Logger.debug("Added torrent #{id}")
 
     socket = Pantry.Server.Core.child(parent, Socket)
     Pantry.Server.Socket.broadcast(socket, {:added_torrent, id})
@@ -67,7 +68,7 @@ defmodule Pantry.Server.Manager do
 
   @impl true
   def handle_info(x, {parent, sup}) do
-    Logger.info(inspect(x), [])
+    Logger.warning("Port manager received unexpected message #{inspect(x)}")
 
     {:noreply, {parent, sup}}
   end
@@ -82,12 +83,13 @@ defmodule Pantry.Server.Manager do
 
   @impl true
   def handle_cast({:state, to}, {parent, sup}) do
+    # collect state and add the server to it
     state =
       Supervisor.which_children(sup)
       |> Enum.map(fn {_, worker, _, _} ->
         Subject.state(worker)
       end)
-      |> Enum.reduce(Pantry.Server.State.pure(), &Pantry.Server.State.join/2)
+      |> Enum.reduce(Pantry.Server.State.pure(parent), &Pantry.Server.State.join/2)
 
     socket = Pantry.Server.Core.child(parent, Socket)
     Pantry.Server.Socket.send_state(socket, to, state)

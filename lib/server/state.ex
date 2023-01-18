@@ -3,21 +3,46 @@ defmodule Pantry.Server.State do
   A set of tools for manipulating over a monadic server state structure
   """
 
-  @type state :: %{torrents: torrent_list()}
+  @type state :: %{torrents: torrent_list(), servers: server_list()}
   @type torrent_list :: [torrent()]
+  @type server_list :: [server()]
   @type torrent :: any
+  @type server :: any
 
-  @spec pure() :: state
+  @type unwrapped :: {torrent_list(), server_list()}
+
+  @type bindable :: (unwrapped -> state())
+  @type mappable :: (unwrapped -> any)
+
+  @spec pure() :: state()
   def pure() do
-    %{torrents: []} 
+    %{torrents: [], servers: []}
   end
 
-  @spec join(state, state) :: state
+  @spec pure(server()) :: state()
+  def pure(server) do
+    %{torrents: [], servers: [server]}
+  end
+
+  @spec join(state(), state()) :: state()
   def join(a, b) do
-    %{torrents: a.torrents ++ b.torrents}
+    %{torrents: a.torrents ++ b.torrents, servers: Enum.dedup(a.servers ++ b.servers)}
   end
 
-  @spec parse(state, torrent()) :: {:ok | :err, state}
+  @spec bind(state(), bindable()) :: state()
+  def bind(%{torrents: ts, servers: ss}, f) do
+    f.({ts, ss})
+  end
+
+  @spec map(state(), mappable()) :: any
+  def map(%{torrents: ts, servers: ss}, f) do
+    f.({ts, ss}) 
+  end
+
+  @doc """
+  Parses a message tuple and attempts to modify state.
+  """
+  @spec parse(state(), {:added_torrent | :removed_torrent, any}) :: {:ok | :err, state}
   def parse(state, {:added_torrent, id}) do
     {:ok, bind(state, add(id))}
   end
@@ -30,18 +55,19 @@ defmodule Pantry.Server.State do
     {:error, state}
   end
 
-  @spec bind(state, (torrent_list() -> state)) :: state
-  def bind(%{torrents: ts}, f) do
-    f.(ts)
-  end
-
-  @spec add(torrent()) :: (torrent_list() -> state)
+  @spec add(torrent()) :: bindable()
   def add(id) do
-    fn ts -> %{torrents: [id | ts]} end
+    fn ({ts, ss}) -> %{torrents: [id | ts], servers: ss} end
   end
 
-  @spec remove(torrent()) :: (torrent_list() -> state)
+  @spec remove(torrent()) :: bindable()
   def remove(id) do
-    fn ts -> %{torrents: List.delete(ts, id)} end
+    fn ({ts, ss}) -> %{torrents: List.delete(ts, id), servers: ss} end
+  end
+
+  @spec knows?(state(), server()) :: boolean()
+  def knows?(state, server) do
+    f = fn ({_, ss}) -> Enum.member?(ss, server) end
+    map(state, f)
   end
 end

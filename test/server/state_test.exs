@@ -4,11 +4,29 @@ defmodule Pantry.Server.StateTest do
   doctest Subject
 
   test "torrents" do
-    pure = Subject.pure()
+    self = self()
+    pure = Subject.pure(self)
 
     {:ok, state} = Subject.parse(pure, {:added_torrent, 0})
-    assert %{torrents: [0]} = state
+    assert %{torrents: [0], servers: [^self]} = state
 
-    {:ok, ^pure} = Subject.parse(state, {:removed_torrent, 0})
+    assert {:ok, ^pure} = Subject.parse(state, {:removed_torrent, 0})
+  end
+
+  test "servers" do
+    pure = Subject.pure(self())
+
+    assert ^pure = Subject.join(pure, pure)
+  end
+
+  test "knows" do
+    state = Subject.pure(self())
+
+    assert Subject.knows?(state, self())
+    assert !Subject.knows?(state, :wrong)
+
+    state = Subject.pure()
+
+    assert !Subject.knows?(state, self())
   end
 end

@@ -41,7 +41,7 @@ defmodule Pantry.Server.Socket do
 
   @impl true
   def init({parent, handle}) do
-    Logger.debug("Socket #{inspect(self())} initializing")
+    Logger.debug("Server socket #{inspect(self())} initializing")
     {:ok, {parent, handle}}
   end
 
@@ -76,7 +76,7 @@ defmodule Pantry.Server.Socket do
 
   @impl true
   def handle_info(msg, {parent, handle}) do
-    Logger.warning("Unexpected message in a socket: #{msg}")
+    Logger.warning("Unexpected message in a server socket: #{msg}")
     {:noreply, {parent, handle}}
   end
 end

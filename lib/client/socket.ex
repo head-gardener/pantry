@@ -2,6 +2,8 @@ defmodule Pantry.Client.Socket do
   require Logger
   @behaviour GenServer
 
+  alias Pantry.Server.State, as: State
+
   @moduledoc """
   This module is responsible for linking UI with the router.
   It will crash if connection can't be established.
@@ -16,6 +18,10 @@ defmodule Pantry.Client.Socket do
     GenServer.abcast([Node.self() | Node.list()], handle, {:info, from, msg})
   end
 
+  def get_state(handle) do
+    GenServer.call(handle, :get_state)
+  end
+
   @impl true
   def init({parent, handle}) do
     try do
@@ -28,41 +34,45 @@ defmodule Pantry.Client.Socket do
         )
     end
 
-    Logger.info("Client socket #{inspect(self())} initializing")
-    {:ok, {parent, []}}
+    Logger.debug("Client socket #{inspect(self())} initializing")
+    {:ok, {parent, State.pure()}}
   end
 
   @impl true
-  def handle_cast({:info, from, msg}, {parent, servers}) when is_pid(from) do
-    Logger.info("Socket received msg: #{inspect(msg)}")
+  def handle_call(:get_state, _, {parent, state}) do
+    {:reply, state, {parent, state}}
+  end
 
-    servers =
-      if Enum.member?(servers, from) do
-        agent = Pantry.Client.Core.child(parent, StateAgent)
-        Pantry.Client.StateAgent.parse(agent, msg)
-        servers
+  @impl true
+  def handle_cast({:info, from, msg}, {parent, state}) when is_pid(from) do
+    Logger.debug("Client socket received info: #{inspect(msg)}")
+
+    state =
+      if State.knows?(state, from) do
+        {_, new_state} = State.parse(state, msg)
+        new_state
       else
+        Logger.debug(
+          "Discovery sequence triggered for #{inspect(from)} after receiving #{inspect(msg)}"
+        )
+
         socket = Pantry.Server.Core.child(from, Socket)
         # TODO make this non blocking
         # reason: server might die during the request, 
         # which will result in a 5 second downtime
-        state = Pantry.Server.Socket.request_state(socket)
-        agent = Pantry.Client.Core.child(parent, StateAgent)
-        Pantry.Client.StateAgent.join(agent, state)
-        [from | servers]
+        new_state = Pantry.Server.Socket.request_state(socket)
+        State.join(state, new_state)
       end
 
-    agent = Pantry.Client.Core.child(parent, StateAgent)
-    state = Pantry.Client.StateAgent.get(agent)
     ui = Pantry.Client.Core.child(parent, UI)
     Pantry.Client.UI.Console.display(ui, state)
 
-    {:noreply, {parent, servers}}
+    {:noreply, {parent, state}}
   end
 
   @impl true
   def handle_cast(msg, {parent, servers}) do
-    Logger.warning("Unexpected message: #{inspect(msg)}")
+    Logger.warning("Client socket received unexpected message: #{inspect(msg)}")
     {:noreply, {parent, servers}}
   end
 end
