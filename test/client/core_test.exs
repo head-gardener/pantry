@@ -1,14 +1,14 @@
 defmodule Pantry.Client.CoreTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Pantry.Client.Core, as: Subject
   doctest Subject
 
   setup [:start_client, :start_server]
 
   defp start_client(_context) do
-    # generates unique handle for each test to avoid broadcast clashes
+    # generate unique handle for each test to avoid broadcast clashes
     handle = String.to_atom(inspect(make_ref()))
-    {:ok, client} = Subject.start_link(handle)
+    {:ok, client} = Subject.start_link(handle: handle, ui: :echo, listener: self())
     [client: client, handle: handle]
   end
 
@@ -24,7 +24,7 @@ defmodule Pantry.Client.CoreTest do
     # wait for server to intialize and register
     :ok =
       receive do
-        x -> x
+        # x -> x
       after
         100 -> :ok
       end
@@ -34,7 +34,7 @@ defmodule Pantry.Client.CoreTest do
 
     :ok =
       receive do
-        x -> x
+        # x -> x
       after
         100 -> :ok
       end
@@ -49,7 +49,7 @@ defmodule Pantry.Client.CoreTest do
 
     :ok =
       receive do
-        x -> x
+        # x -> x
       after
         100 -> :ok
       end

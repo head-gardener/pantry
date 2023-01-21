@@ -6,7 +6,7 @@ defmodule Pantry.Server.CoreTest do
   setup [:start]
 
   defp start(_context) do
-    {:ok, server} = Subject.start_link()
+    {:ok, server} = Subject.start_link(:echo)
     [server: server]
   end
 

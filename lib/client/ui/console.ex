@@ -1,12 +1,12 @@
 defmodule Pantry.Client.UI.Console do
   @behaviour GenServer
+  
+  @moduledoc """
+  TUI for pantry client.
+  """
 
   def start_link(parent) do
-    GenServer.start_link(__MODULE__, [parent])
-  end
-
-  def display(server, state) do
-    GenServer.cast(server, {:display, state})
+    GenServer.start_link(__MODULE__, parent)
   end
 
   @impl true

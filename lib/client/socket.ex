@@ -65,7 +65,7 @@ defmodule Pantry.Client.Socket do
       end
 
     ui = Pantry.Client.Core.child(parent, UI)
-    Pantry.Client.UI.Console.display(ui, state)
+    Pantry.Client.UI.Generic.display(ui, state)
 
     {:noreply, {parent, state}}
   end
