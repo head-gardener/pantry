@@ -1,4 +1,4 @@
-defmodule Pantry.Server.State do
+defmodule PantryServer.State do
   @moduledoc """
   A set of tools for manipulating over a monadic server state structure
   """
@@ -36,7 +36,7 @@ defmodule Pantry.Server.State do
 
   @spec map(state(), mappable()) :: any
   def map(%{torrents: ts, servers: ss}, f) do
-    f.({ts, ss}) 
+    f.({ts, ss})
   end
 
   @doc """
@@ -57,17 +57,17 @@ defmodule Pantry.Server.State do
 
   @spec add(torrent()) :: bindable()
   def add(id) do
-    fn ({ts, ss}) -> %{torrents: [id | ts], servers: ss} end
+    fn {ts, ss} -> %{torrents: [id | ts], servers: ss} end
   end
 
   @spec remove(torrent()) :: bindable()
   def remove(id) do
-    fn ({ts, ss}) -> %{torrents: List.delete(ts, id), servers: ss} end
+    fn {ts, ss} -> %{torrents: List.delete(ts, id), servers: ss} end
   end
 
   @spec knows?(state(), server()) :: boolean()
   def knows?(state, server) do
-    f = fn ({_, ss}) -> Enum.member?(ss, server) end
+    f = fn {_, ss} -> Enum.member?(ss, server) end
     map(state, f)
   end
 end

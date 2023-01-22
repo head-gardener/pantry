@@ -1,6 +1,6 @@
-defmodule Pantry.Server.StateTest do
+defmodule PantryServer.StateTest do
   use ExUnit.Case, async: true
-  alias Pantry.Server.State, as: Subject
+  alias PantryServer.State, as: Subject
   doctest Subject
 
   test "torrents" do

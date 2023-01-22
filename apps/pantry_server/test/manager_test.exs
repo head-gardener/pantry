@@ -1,6 +1,6 @@
-defmodule Pantry.Server.ManagerTest do
+defmodule PantryServer.ManagerTest do
   use ExUnit.Case
-  alias Pantry.Server.Manager, as: Subject
+  alias PantryServer.Manager, as: Subject
   doctest Subject
 
   setup [:start]

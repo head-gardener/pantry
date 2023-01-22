@@ -1,13 +1,19 @@
-defmodule Pantry.Client.Core do
+defmodule PantryClient.Application do
+  use Application
+
   @behaviour GenServer
   require Logger
 
   @moduledoc """
-  Responsible for supervision of all subsystems in a single atomic cluster, 
-  i. e. controls a single manager (more subjects will be added over time).
+  Client for a pantry server.
   """
 
-  def start_link(opts \\ [ui: :console, handle: :client]) do 
+  @impl true
+  def start(_type, args) do
+    start_link(args)
+  end
+
+  def start_link(opts \\ [ui: :console, handle: :client]) do
     handle = Keyword.get(opts, :handle, :client)
     ui = Keyword.get(opts, :ui, :console)
     listener = Keyword.get(opts, :listener, nil)
@@ -21,14 +27,14 @@ defmodule Pantry.Client.Core do
   defp get_ui_spec(:console, _) do
     %{
       id: UI,
-      start: {Pantry.Client.UI.Console, :start_link, [self()]}
+      start: {PantryClient.UI.Console, :start_link, [self()]}
     }
   end
 
   defp get_ui_spec(:echo, listener) when is_pid(listener) do
     %{
       id: UI,
-      start: {Pantry.Client.UI.Echo, :start_link, [listener]}
+      start: {PantryClient.UI.Echo, :start_link, [listener]}
     }
   end
 
@@ -48,8 +54,9 @@ defmodule Pantry.Client.Core do
   def init({ui, handle, listener}) do
     socket_spec = %{
       id: Socket,
-      start: {Pantry.Client.Socket, :start_link, [self(), handle]}
+      start: {PantryClient.Socket, :start_link, [self(), handle]}
     }
+
     ui_spec = get_ui_spec(ui, listener)
 
     {:ok, sup} = Supervisor.start_link([socket_spec, ui_spec], strategy: :one_for_one)

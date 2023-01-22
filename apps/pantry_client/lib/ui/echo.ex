@@ -1,4 +1,4 @@
-defmodule Pantry.Client.UI.Echo do
+defmodule PantryClient.UI.Echo do
   @behaviour GenServer
 
   @moduledoc """

@@ -1,3 +1,3 @@
 ExUnit.start()
-Logger.configure(level: :none)
+Logger.configure(level: :warning)
 # Logger.configure(level: :all)

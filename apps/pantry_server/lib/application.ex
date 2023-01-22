@@ -1,12 +1,21 @@
-defmodule Pantry.Server.Core do
+defmodule PantryServer.Application do
+  use Application
   @behaviour GenServer
 
   @moduledoc """
-  Responsible for supervision of all subsystems in a single atomic cluster, 
-  i. e. controls a single manager (more subjects will be added over time).
+  Pantry server, does the actual work in a highly distributed manner.
   """
 
-  def start_link(handle \\ :client) do
+  # TODO this shouldn't be genserver
+
+  @impl true
+  def start(_type, args) do
+    start_link(args)
+  end
+
+  def start_link(args \\ [handle: :client]) do
+    handle = Keyword.get(args, :handle, :client)
+
     GenServer.start_link(__MODULE__, handle)
   end
 
@@ -18,12 +27,12 @@ defmodule Pantry.Server.Core do
   def init(handle) do
     manager_spec = %{
       id: Manager,
-      start: {Pantry.Server.Manager, :start_link, [self()]}
+      start: {PantryServer.Manager, :start_link, [self()]}
     }
 
     socket_spec = %{
       id: Socket,
-      start: {Pantry.Server.Socket, :start_link, [self(), handle]}
+      start: {PantryServer.Socket, :start_link, [self(), handle]}
     }
 
     {:ok, sup} = Supervisor.start_link([manager_spec, socket_spec], strategy: :one_for_one)
@@ -31,7 +40,7 @@ defmodule Pantry.Server.Core do
     {_, socket, _, _} = Supervisor.which_children(sup) |> List.keyfind(Socket, 0)
     # inform all listening client sockets of a new server,
     # which triggers discovery sequence
-    Pantry.Server.Socket.broadcast(socket, {:server_spawned})
+    PantryServer.Socket.broadcast(socket, {:server_spawned})
 
     {:ok, {sup}}
   end

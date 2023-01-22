@@ -1,13 +1,15 @@
-defmodule Pantry.Server.Socket do
+defmodule PantryServer.Socket do
   require Logger
   @behaviour GenServer
+
+  alias PantryServer.Application
 
   @moduledoc """
   Connects server to the network. Main purpose is to isolate
   network-related errors from the server.
   """
 
-  def start_link(parent, handle) do
+  def start_link(parent, handle \\ :client) do
     GenServer.start_link(__MODULE__, {parent, handle})
   end
 
@@ -23,7 +25,7 @@ defmodule Pantry.Server.Socket do
     GenServer.cast(server, {:request_torrent_add, info})
   end
 
-  @spec send_state(GenServer.server(), GenServer.from(), Pantry.Server.State.state()) :: :ok
+  @spec send_state(GenServer.server(), GenServer.from(), PantryServer.State.state()) :: :ok
   def send_state(server, to, state) do
     GenServer.cast(server, {:send_state, to, state})
   end
@@ -47,16 +49,16 @@ defmodule Pantry.Server.Socket do
 
   @impl true
   def handle_call({:request_state}, from, {parent, handle}) do
-    manager = Pantry.Server.Core.child(parent, Manager)
-    Pantry.Server.Manager.request_state(manager, from)
+    manager = Application.child(parent, Manager)
+    PantryServer.Manager.request_state(manager, from)
 
     {:noreply, {parent, handle}}
   end
 
   @impl true
   def handle_cast({:request_torrent_add, info}, {parent, handle}) do
-    manager = Pantry.Server.Core.child(parent, Manager)
-    Pantry.Server.Manager.add(manager, info)
+    manager = Application.child(parent, Manager)
+    PantryServer.Manager.add(manager, info)
 
     {:noreply, {parent, handle}}
   end
@@ -69,7 +71,7 @@ defmodule Pantry.Server.Socket do
 
   @impl true
   def handle_cast({:broadcast, msg}, {parent, handle}) do
-    Pantry.Client.Socket.broadcast(handle, msg, parent)
+    GenServer.abcast([Node.self() | Node.list()], handle, {:info, parent, msg})
 
     {:noreply, {parent, handle}}
   end

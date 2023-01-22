@@ -1,10 +1,13 @@
-defmodule Pantry.Server.TorrentEngine do
+defmodule PantryServer.TorrentEngine do
   @behaviour GenServer
   require Logger
 
   @moduledoc """
   Wraps around an engine port and provides an asynchronous functional interface.
   """
+
+  # TODO make this into a simple function toolbox
+  # and stop vasting so many fucking CPU cycles
 
   def start_link(parent) do
     GenServer.start_link(__MODULE__, parent)
@@ -36,9 +39,11 @@ defmodule Pantry.Server.TorrentEngine do
   def init(parent) do
     Process.flag(:trap_exit, true)
 
+    # hacky but kinda works
+    engine_path = Mix.Project.app_path() <> "/../../../../native/torrent_engine/bin/torrent_engine"
     opts = [{:packet, 4}, :binary, :exit_status, :use_stdio]
-    port = Port.open({:spawn, "native/torrent_engine/bin/torrent_engine"}, opts)
-    state = Pantry.Server.State.pure()
+    port = Port.open({:spawn, engine_path}, opts)
+    state = PantryServer.State.pure()
 
     Logger.debug("Port #{inspect(self())} inits")
     {:ok, {port, parent, state}}
@@ -74,7 +79,7 @@ defmodule Pantry.Server.TorrentEngine do
     # Logger.debug("#{inspect(self())} added")
 
     msg = {:added_torrent, id}
-    {:ok, state} = Pantry.Server.State.parse(state, msg)
+    {:ok, state} = PantryServer.State.parse(state, msg)
     send(parent, msg)
 
     {:noreply, {port, parent, state}}

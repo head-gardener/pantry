@@ -1,6 +1,6 @@
-defmodule Pantry.Server.TorrentEngineTest do
+defmodule PantryServer.TorrentEngineTest do
   use ExUnit.Case, async: true
-  alias Pantry.Server.TorrentEngine, as: Subject
+  alias PantryServer.TorrentEngine, as: Subject
   doctest Subject
 
   setup [:start]
@@ -20,7 +20,7 @@ defmodule Pantry.Server.TorrentEngineTest do
   end
 
   test "add torrent", context do
-    params = "examples/nmap.torrent"
+    params = "../../contrib/nmap.torrent"
     Subject.add(context.port, params)
 
     :ok =
@@ -28,7 +28,7 @@ defmodule Pantry.Server.TorrentEngineTest do
         {:added_torrent, _} -> :ok
         x -> x
       after
-        1_000 -> :timeout 
+        1_000 -> :timeout
       end
   end
 

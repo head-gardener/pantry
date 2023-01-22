@@ -1,8 +1,9 @@
-defmodule Pantry.Client.Socket do
+defmodule PantryClient.Socket do
   require Logger
   @behaviour GenServer
 
-  alias Pantry.Server.State, as: State
+  alias PantryServer.State
+  alias PantryClient.Application
 
   @moduledoc """
   This module is responsible for linking UI with the router.
@@ -12,10 +13,6 @@ defmodule Pantry.Client.Socket do
 
   def start_link(parent, handle) do
     GenServer.start_link(__MODULE__, {parent, handle})
-  end
-
-  def broadcast(handle, msg, from) do
-    GenServer.abcast([Node.self() | Node.list()], handle, {:info, from, msg})
   end
 
   def get_state(handle) do
@@ -56,16 +53,16 @@ defmodule Pantry.Client.Socket do
           "Discovery sequence triggered for #{inspect(from)} after receiving #{inspect(msg)}"
         )
 
-        socket = Pantry.Server.Core.child(from, Socket)
         # TODO make this non blocking
         # reason: server might die during the request, 
         # which will result in a 5 second downtime
-        new_state = Pantry.Server.Socket.request_state(socket)
-        State.join(state, new_state)
+        Application.child(from, Socket)
+        |> PantryServer.Socket.request_state()
+        |> State.join(state)
       end
 
-    ui = Pantry.Client.Core.child(parent, UI)
-    Pantry.Client.UI.Generic.display(ui, state)
+    Application.child(parent, UI)
+    |> PantryClient.UI.Generic.display(state)
 
     {:noreply, {parent, state}}
   end

@@ -1,7 +1,9 @@
-defmodule Pantry.Server.Manager do
-  alias Pantry.Server.TorrentEngine, as: Subject
+defmodule PantryServer.Manager do
   require Logger
   @behaviour GenServer
+
+  alias PantryServer.TorrentEngine, as: Engine
+  alias PantryServer.Application
 
   @moduledoc """
   If TorrentEngine is a lousy worker, this module is a somewhat sensible overseer.
@@ -34,8 +36,8 @@ defmodule Pantry.Server.Manager do
     Logger.debug("Manager #{inspect(self())} initialized")
 
     child = %{
-      id: Subject,
-      start: {Subject, :start_link, [self()]}
+      id: Engine,
+      start: {Engine, :start_link, [self()]}
     }
 
     {:ok, sup} = Supervisor.start_link([child], strategy: :one_for_one)
@@ -53,8 +55,8 @@ defmodule Pantry.Server.Manager do
   def handle_info({:added_torrent, id}, {parent, sup}) do
     Logger.debug("Added torrent #{id}")
 
-    socket = Pantry.Server.Core.child(parent, Socket)
-    Pantry.Server.Socket.broadcast(socket, {:added_torrent, id})
+    socket = Application.child(parent, Socket)
+    PantryServer.Socket.broadcast(socket, {:added_torrent, id})
 
     {:noreply, {parent, sup}}
   end
@@ -76,7 +78,7 @@ defmodule Pantry.Server.Manager do
   @impl true
   def handle_cast({:add, %{file: file}}, {parent, sup}) do
     [{_, worker, _, _}] = Supervisor.which_children(sup)
-    Subject.add(worker, file)
+    Engine.add(worker, file)
 
     {:noreply, {parent, sup}}
   end
@@ -87,12 +89,12 @@ defmodule Pantry.Server.Manager do
     state =
       Supervisor.which_children(sup)
       |> Enum.map(fn {_, worker, _, _} ->
-        Subject.state(worker)
+        Engine.state(worker)
       end)
-      |> Enum.reduce(Pantry.Server.State.pure(parent), &Pantry.Server.State.join/2)
+      |> Enum.reduce(PantryServer.State.pure(parent), &PantryServer.State.join/2)
 
-    socket = Pantry.Server.Core.child(parent, Socket)
-    Pantry.Server.Socket.send_state(socket, to, state)
+    socket = Application.child(parent, Socket)
+    PantryServer.Socket.send_state(socket, to, state)
 
     {:noreply, {parent, sup}}
   end

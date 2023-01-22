@@ -4,25 +4,14 @@ defmodule Pantry.MixProject do
   def project do
     [
       app: :pantry,
+      apps_path: "apps",
       version: "0.1.0",
-      elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
-      deps: deps(),
-      compilers: [:elixir_make] ++ Mix.compilers(),
-
-      make_cwd: "native/torrent_engine", 
-    ]
-  end
-
-  def application do
-    [
-      extra_applications: [:logger]
+      deps: deps()
     ]
   end
 
   defp deps do
-    [
-      {:elixir_make, "~> 0.4"},
-    ]
+    []
   end
 end

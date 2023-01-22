@@ -1,4 +1,4 @@
-defmodule Pantry.Client.UI.Generic do
+defmodule PantryClient.UI.Generic do
   @moduledoc """
   Generic interface for all user interfaces.
   """

@@ -1,6 +1,7 @@
-defmodule Pantry.Client.CoreTest do
-  use ExUnit.Case, async: false
-  alias Pantry.Client.Core, as: Subject
+defmodule PantryClient.AppTest do
+  use ExUnit.Case, async: true
+  alias PantryClient.Application, as: Subject
+  alias PantryServer.Application, as: Server
   doctest Subject
 
   setup [:start_client, :start_server]
@@ -13,13 +14,13 @@ defmodule Pantry.Client.CoreTest do
   end
 
   defp start_server(context) do
-    {:ok, server} = Pantry.Server.Core.start_link(context.handle)
+    {:ok, server} = Server.start_link(handle: context.handle)
     {:ok, server: server}
   end
 
   test "registers new servers correctly", context do
     msg = {:added_torrent, "0"}
-    {:ok, state} = Pantry.Server.State.pure(context.server) |> Pantry.Server.State.parse(msg)
+    {:ok, state} = PantryServer.State.pure(context.server) |> PantryServer.State.parse(msg)
 
     # wait for server to intialize and register
     :ok =
@@ -39,13 +40,13 @@ defmodule Pantry.Client.CoreTest do
         100 -> :ok
       end
 
-    assert ^state = Pantry.Client.Socket.get_state(socket)
+    assert ^state = PantryClient.Socket.get_state(socket)
   end
 
   test "server side event broadcasts work", context do
-    socket = Pantry.Server.Core.child(context.server, Socket)
+    socket = Server.child(context.server, Socket)
     server = context.server
-    Pantry.Server.Socket.request_torrent_add(socket, %{file: "examples/nmap.torrent"})
+    PantryServer.Socket.request_torrent_add(socket, %{file: "../../contrib/nmap.torrent"})
 
     :ok =
       receive do
@@ -55,7 +56,7 @@ defmodule Pantry.Client.CoreTest do
       end
 
     socket = Subject.child(context.client, Socket)
-    %{torrents: ts, servers: [^server]} = Pantry.Client.Socket.get_state(socket)
+    %{torrents: ts, servers: [^server]} = PantryClient.Socket.get_state(socket)
     assert Enum.count(ts) == 1
   end
 end
