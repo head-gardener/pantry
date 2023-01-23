@@ -24,7 +24,8 @@ defmodule PantryClient.MixProject do
 
   defp deps do
     [
-      {:pantry_server, in_umbrella: true}
+      {:pantry_server, in_umbrella: true},
+      {:ex_ncurses, "~> 0.3"}
     ]
   end
 end
