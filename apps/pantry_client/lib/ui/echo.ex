@@ -1,23 +1,22 @@
 defmodule PantryClient.UI.Echo do
-  @behaviour GenServer
-
   @moduledoc """
   Echoing UI for testing.
   """
 
-  def start_link(listener) do
-    GenServer.start_link(__MODULE__, listener)
+  def start_link(receiver) do
+    Task.start_link(fn ->
+      listen(receiver)
+    end)
   end
 
-  @impl true
-  def init(listener) do
-    {:ok, {listener}}
-  end
+  def listen(receiver) do
+    :ok = receive do
+      {:display, state} ->
+        send(receiver, {:echo, state})
+        :ok
+      _ -> :ok
+    end
 
-  @impl true
-  def handle_cast({:display, state}, {listener}) do
-    send(listener, {:echo, state})
-
-    {:noreply, {listener}}
+    listen(receiver)
   end
 end

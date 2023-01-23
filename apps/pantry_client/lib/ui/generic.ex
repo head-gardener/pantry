@@ -4,6 +4,6 @@ defmodule PantryClient.UI.Generic do
   """
 
   def display(server, state) do
-    GenServer.cast(server, {:display, state})
+    send(server, {:display, state})
   end
 end
