@@ -2,10 +2,10 @@
 
 Distributed torrent client with asyncrhonous UI.
 
-- **works**: kind of but not yet really.
-- **overengineered**: beyond belief 🔥.
-- **features**: no.
-- **async**: yes.
+- **works**: kind of but not yet really
+- **overengineered**: beyond belief 🔥
+- **features**: no
+- **async**: yes
 
 ## Dependencies
 
