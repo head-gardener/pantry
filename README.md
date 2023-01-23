@@ -2,6 +2,11 @@
 
 Distributed torrent client with asyncrhonous UI.
 
+- **works**: kind of but not yet really.
+- **overengineered**: beyond belief 🔥.
+- **features**: no.
+- **async**: yes.
+
 ## Dependencies
 
 Currently project only targets Linux systems.
@@ -12,8 +17,8 @@ Make and g++ are needed to build C++ code.
 
 Pantry is split into servers and clients. Both can have multiple 
 instances running and distributed over multiple physical machines. 
-  - `Pantry.Server.Core.start_link/0` and `Pantry.Client.Core.start_link/0`
+  - `PantryServer.Application.start/0` and `PantryClient.Application.start/0`
     are used to start instances. 
   - Clients and servers synchronize automatically once they see each other.
-  - `Pantry.Server.Socket` can be used to controll a server.
+  - `PantryServer.Socket` can be used to controll a server.
 
