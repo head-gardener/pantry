@@ -2,6 +2,8 @@ defmodule PantryServer.Socket do
   require Logger
   @behaviour GenServer
 
+  @blick_delay 5000
+
   alias PantryServer.Application
 
   @moduledoc """
@@ -25,13 +27,24 @@ defmodule PantryServer.Socket do
     GenServer.cast(server, {:request_torrent_add, info})
   end
 
+  @doc """
+  Schedules a bcast to inform all new and listening clients that server is up.
+  """
+  def schedule_blink(server, opts \\ [delay: @blick_delay, loop: true]) do
+    delay = Keyword.get(opts, :delay, @blick_delay)
+    loop = Keyword.get(opts, :loop, true)
+
+    Process.send_after(self(), {:blink_request, loop, delay}, delay)
+  end
+
   @spec send_state(GenServer.server(), GenServer.from(), PantryServer.State.state()) :: :ok
   def send_state(server, to, state) do
     GenServer.cast(server, {:send_state, to, state})
   end
 
   @doc """
-  Sends `msg` to all processes registered as `:client` on all available nodes.
+  Request the socket to send `msg` to all processes registered as `:client` on 
+  all available nodes.
   Since only one process can register as a specific atom, this assumes at most 
   a single client on each node, which fits real life but may negatively impact 
   testing.
@@ -44,6 +57,7 @@ defmodule PantryServer.Socket do
   @impl true
   def init({parent, handle}) do
     Logger.debug("Server socket #{inspect(self())} initializing")
+    schedule_blink(self())
     {:ok, {parent, handle}}
   end
 
@@ -77,8 +91,30 @@ defmodule PantryServer.Socket do
   end
 
   @impl true
-  def handle_info(msg, {parent, handle}) do
-    Logger.warning("Unexpected message in a server socket: #{msg}")
+  def handle_info({:blink_request, true, delay}, {parent, handle}) do
+    broadcast_to_clients(parent, handle, {:blink})
+    schedule_blink([delay: delay, loop: true])
+
     {:noreply, {parent, handle}}
+  end
+
+  @impl true
+  def handle_info({:blink_request, false, _}, {parent, handle}) do
+    broadcast_to_clients(parent, handle, {:blink})
+
+    {:noreply, {parent, handle}}
+  end
+
+  @impl true
+  def handle_info(msg, {parent, handle}) do
+    Logger.warning("Unexpected message in a server socket: #{inspect(msg)}")
+    {:noreply, {parent, handle}}
+  end
+
+  @doc """
+  Send `msg` to all clients, registered as `handle`.
+  """
+  defp broadcast_to_clients(parent, handle, msg) do
+    GenServer.abcast([Node.self() | Node.list()], handle, {:info, parent, msg})
   end
 end
