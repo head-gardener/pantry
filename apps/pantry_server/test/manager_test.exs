@@ -7,7 +7,6 @@ defmodule PantryServer.ManagerTest do
 
   defp start(_context) do
     {:ok, manager} = Subject.start_link(self())
-
     [manager: manager]
   end
 end

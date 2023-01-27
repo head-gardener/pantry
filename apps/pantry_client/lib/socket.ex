@@ -11,7 +11,7 @@ defmodule PantryClient.Socket do
   After all, what is a client if not a UI and a socket.
   """
 
-  def start_link(parent, handle) do
+  def start_link(parent, handle \\ :client) do
     GenServer.start_link(__MODULE__, {parent, handle})
   end
 
@@ -56,13 +56,12 @@ defmodule PantryClient.Socket do
         # TODO make this non blocking
         # reason: server might die during the request, 
         # which will result in a 5 second downtime
-        Application.child(from, Socket)
+        from
         |> PantryServer.Socket.request_state()
         |> State.join(state)
       end
 
-    Application.child(parent, UI)
-    |> PantryClient.UI.Generic.display(state)
+    PantryClient.UI.Generic.display(:ui, state)
 
     {:noreply, {parent, state}}
   end

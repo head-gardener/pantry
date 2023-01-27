@@ -9,7 +9,7 @@ defmodule PantryClient.UI.Console do
   """
 
   def start_link(parent) do
-    GenServer.start_link(__MODULE__, parent)
+    GenServer.start_link(__MODULE__, parent, name: :ui)
   end
 
   @impl true
@@ -59,17 +59,20 @@ defmodule PantryClient.UI.Console do
     ExNcurses.wclear(torrents_window)
 
     ExNcurses.wmove(torrents_window, 1, 1)
+
     Enum.map(torrents, fn t ->
       ExNcurses.waddstr(torrents_window, t <> "\n ")
     end)
+
     ExNcurses.wborder(torrents_window)
 
     ExNcurses.wmove(servers_window, 1, 1)
+
     Enum.map(servers, fn t ->
       ExNcurses.waddstr(servers_window, t <> "\n ")
     end)
-    ExNcurses.wborder(torrents_window)
 
+    ExNcurses.wborder(torrents_window)
 
     ExNcurses.wborder(servers_window)
 

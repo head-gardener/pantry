@@ -11,8 +11,8 @@ defmodule PantryServer.MixProject do
       lockfile: "../../mix.lock",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
-      deps: deps(),
-      compilers: [:elixir_make] ++ Mix.compilers()
+      deps: deps()
+      # compilers: [:elixir_make] ++ Mix.compilers(),
     ]
   end
 
@@ -25,7 +25,7 @@ defmodule PantryServer.MixProject do
 
   defp deps do
     [
-      {:elixir_make, "~> 0.4"},
+      {:elixir_make, "~> 0.4"}
     ]
   end
 end

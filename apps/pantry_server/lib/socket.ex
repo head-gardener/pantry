@@ -4,15 +4,14 @@ defmodule PantryServer.Socket do
 
   @blick_delay 5000
 
-  alias PantryServer.Application
-
   @moduledoc """
   Connects server to the network. Main purpose is to isolate
   network-related errors from the server.
   """
 
-  def start_link(parent, handle \\ :client) do
-    GenServer.start_link(__MODULE__, {parent, handle})
+  def start_link(parent, client_handle \\ :client) do
+    GenServer.start_link(__MODULE__, {parent, client_handle})
+    # GenServer.start_link(__MODULE__, {parent, client_handle}, name: :server_socket)
   end
 
   def request_state(server) do
@@ -23,6 +22,9 @@ defmodule PantryServer.Socket do
     GenServer.call(server, {:request_state})
   end
 
+  @doc """
+  Sends torrent request to an associated manager
+  """
   def request_torrent_add(server, info) do
     GenServer.cast(server, {:request_torrent_add, info})
   end
@@ -30,16 +32,11 @@ defmodule PantryServer.Socket do
   @doc """
   Schedules a bcast to inform all new and listening clients that server is up.
   """
-  def schedule_blink(server, opts \\ [delay: @blick_delay, loop: true]) do
+  def schedule_blink(server, opts \\ []) do
     delay = Keyword.get(opts, :delay, @blick_delay)
     loop = Keyword.get(opts, :loop, true)
 
-    Process.send_after(self(), {:blink_request, loop, delay}, delay)
-  end
-
-  @spec send_state(GenServer.server(), GenServer.from(), PantryServer.State.state()) :: :ok
-  def send_state(server, to, state) do
-    GenServer.cast(server, {:send_state, to, state})
+    Process.send_after(server, {:blink_request, loop, delay}, delay)
   end
 
   @doc """
@@ -55,66 +52,57 @@ defmodule PantryServer.Socket do
   end
 
   @impl true
-  def init({parent, handle}) do
+  def init({parent, client_handle}) do
     Logger.debug("Server socket #{inspect(self())} initializing")
+    Process.register(self(), :server_socket)
     schedule_blink(self())
-    {:ok, {parent, handle}}
+    {:ok, {parent, client_handle}}
   end
 
   @impl true
-  def handle_call({:request_state}, from, {parent, handle}) do
-    manager = Application.child(parent, Manager)
-    PantryServer.Manager.request_state(manager, from)
+  def handle_call({:request_state}, from, {parent, client_handle}) do
+    PantryServer.Manager.request_state(:manager, from)
 
-    {:noreply, {parent, handle}}
+    {:noreply, {parent, client_handle}}
   end
 
   @impl true
-  def handle_cast({:request_torrent_add, info}, {parent, handle}) do
-    manager = Application.child(parent, Manager)
-    PantryServer.Manager.add(manager, info)
+  def handle_cast({:request_torrent_add, info}, {parent, client_handle}) do
+    PantryServer.Manager.add(:manager, info)
 
-    {:noreply, {parent, handle}}
+    {:noreply, {parent, client_handle}}
   end
 
   @impl true
-  def handle_cast({:send_state, to, state}, {parent, handle}) do
-    GenServer.reply(to, state)
-    {:noreply, {parent, handle}}
+  def handle_cast({:broadcast, msg}, {parent, client_handle}) do
+    GenServer.abcast([Node.self() | Node.list()], client_handle, {:info, self(), msg})
+
+    {:noreply, {parent, client_handle}}
   end
 
   @impl true
-  def handle_cast({:broadcast, msg}, {parent, handle}) do
-    GenServer.abcast([Node.self() | Node.list()], handle, {:info, parent, msg})
+  def handle_info({:blink_request, true, delay}, {parent, client_handle}) do
+    broadcast_to_clients(client_handle, {:blink})
+    schedule_blink(self(), delay: delay, loop: true)
 
-    {:noreply, {parent, handle}}
+    {:noreply, {parent, client_handle}}
   end
 
   @impl true
-  def handle_info({:blink_request, true, delay}, {parent, handle}) do
-    broadcast_to_clients(parent, handle, {:blink})
-    schedule_blink([delay: delay, loop: true])
+  def handle_info({:blink_request, false, _}, {parent, client_handle}) do
+    broadcast_to_clients(client_handle, {:blink})
 
-    {:noreply, {parent, handle}}
+    {:noreply, {parent, client_handle}}
   end
 
   @impl true
-  def handle_info({:blink_request, false, _}, {parent, handle}) do
-    broadcast_to_clients(parent, handle, {:blink})
-
-    {:noreply, {parent, handle}}
-  end
-
-  @impl true
-  def handle_info(msg, {parent, handle}) do
+  def handle_info(msg, {parent, client_handle}) do
     Logger.warning("Unexpected message in a server socket: #{inspect(msg)}")
-    {:noreply, {parent, handle}}
+    {:noreply, {parent, client_handle}}
   end
 
-  @doc """
-  Send `msg` to all clients, registered as `handle`.
-  """
-  defp broadcast_to_clients(parent, handle, msg) do
-    GenServer.abcast([Node.self() | Node.list()], handle, {:info, parent, msg})
+  # Send `msg` to all clients, registered as `handle`.
+  defp broadcast_to_clients(client_handle, msg) do
+    GenServer.abcast([Node.self() | Node.list()], client_handle, {:info, self(), msg})
   end
 end

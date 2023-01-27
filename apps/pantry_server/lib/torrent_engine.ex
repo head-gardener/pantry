@@ -7,7 +7,7 @@ defmodule PantryServer.TorrentEngine do
   """
 
   # TODO make this into a simple function toolbox
-  # and stop vasting so many fucking CPU cycles
+  # and stop wasting so many damn CPU cycles
 
   def start_link(parent) do
     GenServer.start_link(__MODULE__, parent)
@@ -40,7 +40,9 @@ defmodule PantryServer.TorrentEngine do
     Process.flag(:trap_exit, true)
 
     # hacky but kinda works
-    engine_path = Mix.Project.app_path() <> "/../../../../native/torrent_engine/bin/torrent_engine"
+    engine_path =
+      Mix.Project.app_path() <> "/../../../../native/torrent_engine/bin/torrent_engine"
+
     opts = [{:packet, 4}, :binary, :exit_status, :use_stdio]
     port = Port.open({:spawn, engine_path}, opts)
     state = PantryServer.State.pure()

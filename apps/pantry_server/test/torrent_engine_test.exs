@@ -7,29 +7,14 @@ defmodule PantryServer.TorrentEngineTest do
 
   defp start(_context) do
     assert {:ok, port} = Subject.start_link(self())
-
-    {:ok, port} =
-      receive do
-        {:port_started} -> {:ok, port}
-        x -> x
-      after
-        1_000 -> :timeout
-      end
-
+    assert_receive {:port_started}
     {:ok, port: port}
   end
 
   test "add torrent", context do
     params = "../../contrib/nmap.torrent"
     Subject.add(context.port, params)
-
-    :ok =
-      receive do
-        {:added_torrent, _} -> :ok
-        x -> x
-      after
-        1_000 -> :timeout
-      end
+    assert_receive {:added_torrent, _}
   end
 
   test "crashes on port crash", %{port: port} do
@@ -39,26 +24,10 @@ defmodule PantryServer.TorrentEngineTest do
     Subject.add(port, params)
 
     # catch error msg
-    :ok =
-      receive do
-        {:port_critical, _} -> :ok
-      after
-        1_000 -> :timeout
-      end
+    assert_receive {:port_critical, _}
 
     # ensure port crashes
-    :ok =
-      receive do
-        {:port_exit, _} -> :ok
-      after
-        1_000 -> :timeout
-      end
-
-    :ok =
-      receive do
-        {:EXIT, ^port, _} -> :ok
-      after
-        1_000 -> :timeout
-      end
+    assert_receive {:port_exit, _}
+    assert_receive {:EXIT, ^port, _}
   end
 end

@@ -3,7 +3,6 @@ defmodule PantryServer.Manager do
   @behaviour GenServer
 
   alias PantryServer.TorrentEngine, as: Engine
-  alias PantryServer.Application
 
   @moduledoc """
   If TorrentEngine is a lousy worker, this module is a somewhat sensible overseer.
@@ -12,7 +11,7 @@ defmodule PantryServer.Manager do
   """
 
   def start_link(parent) do
-    GenServer.start_link(__MODULE__, parent)
+    GenServer.start_link(__MODULE__, parent, name: :manager)
   end
 
   def add(server, info) do
@@ -55,8 +54,7 @@ defmodule PantryServer.Manager do
   def handle_info({:added_torrent, id}, {parent, sup}) do
     Logger.debug("Added torrent #{id}")
 
-    socket = Application.child(parent, Socket)
-    PantryServer.Socket.broadcast(socket, {:added_torrent, id})
+    PantryServer.Socket.broadcast(:server_socket, {:added_torrent, id})
 
     {:noreply, {parent, sup}}
   end
@@ -85,16 +83,19 @@ defmodule PantryServer.Manager do
 
   @impl true
   def handle_cast({:state, to}, {parent, sup}) do
-    # collect state and add the server to it
+    state =
+      Process.whereis(:server_socket)
+      |> PantryServer.State.pure()
+
+    # collect state and add local socket to it
     state =
       Supervisor.which_children(sup)
       |> Enum.map(fn {_, worker, _, _} ->
         Engine.state(worker)
       end)
-      |> Enum.reduce(PantryServer.State.pure(parent), &PantryServer.State.join/2)
+      |> Enum.reduce(state, &PantryServer.State.join/2)
 
-    socket = Application.child(parent, Socket)
-    PantryServer.Socket.send_state(socket, to, state)
+    GenServer.reply(to, state)
 
     {:noreply, {parent, sup}}
   end

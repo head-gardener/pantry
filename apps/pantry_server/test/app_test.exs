@@ -6,13 +6,15 @@ defmodule PantryServer.AppTest do
   setup [:start]
 
   defp start(_context) do
+    # wait for namespace to clear
+    refute_receive nil, 100
     {:ok, server} = Subject.start_link()
     [server: server]
   end
 
-  test "state", context do
-    socket = Subject.child(context.server, Socket)
-    pure = PantryServer.State.pure(context.server)
+  test "state", _context do
+    socket = Process.whereis(:server_socket)
+    pure = PantryServer.State.pure(socket)
     ^pure = PantryServer.Socket.request_state(socket)
   end
 end
